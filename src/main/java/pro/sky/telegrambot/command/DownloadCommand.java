@@ -26,13 +26,13 @@ public class DownloadCommand implements Command {
 
     private static final String DEFAULT_CAPTION = "Дерево категорий";
 
-    private final ExcelProcessingService workingWithExcelService;
+    private final ExcelProcessingService excelProcessingService;
 
     private final TelegramBot telegramBot;
 
     public DownloadCommand(ExcelProcessingService workingWithExcelService,
                            TelegramBot telegramBot) {
-        this.workingWithExcelService = workingWithExcelService;
+        this.excelProcessingService = workingWithExcelService;
         this.telegramBot = telegramBot;
     }
 
@@ -69,7 +69,7 @@ public class DownloadCommand implements Command {
      * @throws ErrorSendingFileException при ошибках отправки файла
      */
     private void sendExcelDocument(Long chatId) throws IOException, ErrorSendingFileException {
-        byte[] excelData = workingWithExcelService.generateCategoriesExcel();
+        byte[] excelData = excelProcessingService.generateCategoriesExcel();
 
         if (excelData.length > MAX_FILE_SIZE) {
             throw new ErrorSendingFileException("Файл слишком большой для отправки");

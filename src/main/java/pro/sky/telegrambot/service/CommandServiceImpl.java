@@ -51,13 +51,16 @@ public class CommandServiceImpl implements CommandService {
                 }
                 if (message.text() != null && message.text().startsWith("/")) {
                     handleText(message, chatId);
+                } else {
+                    telegramBot.execute(new SendMessage(chatId, "Я понимаю только команды. Введите " +
+                            "/help для справки."));
                 }
             } catch (IOException e) {
-                logger.error("Error processing update: {}", update, e);
+                logger.error("Ошибка обработки обновления: {}", update, e);
                 telegramBot.execute(new SendMessage(chatId, "Произошла непредвиденная ошибка " +
                         "при обработку Excel документа."));
             } catch (Exception e) {
-                logger.error("Error processing update: {}", update, e);
+                logger.error("Ошибка обработки обновления: {}", update, e);
                 telegramBot.execute(new SendMessage(chatId, "Произошла непредвиденная ошибка при обработке запроса."));
             }
         }
@@ -71,7 +74,7 @@ public class CommandServiceImpl implements CommandService {
      * @throws IOException если произошла ошибка при обработке файла
      */
     private void handleDocument(Message message, Long chatId) throws IOException {
-        uploadCommand.handleDocument(chatId, message);
+        uploadCommand.handleDocumentExcel(chatId, message);
     }
 
     /**

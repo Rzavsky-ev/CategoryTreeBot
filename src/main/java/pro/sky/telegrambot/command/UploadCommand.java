@@ -58,7 +58,7 @@ public class UploadCommand implements Command {
      * @param chatId  ID чата для отправки ответа
      * @param message сообщение от пользователя
      */
-    public void handleDocument(Long chatId, Message message) {
+    public void handleDocumentExcel(Long chatId, Message message) {
         try {
             byte[] fileContent = downloadFile(message);
             List<Category> categories = workingWithExcelService.parseExcel(fileContent);
@@ -95,7 +95,7 @@ public class UploadCommand implements Command {
      * @param categories список категорий для сохранения
      */
     @Transactional
-    public void saveCategories(List<Category> categories) {
+    private void saveCategories(List<Category> categories) {
         categoryRepository.deleteAll();
         categoryRepository.saveAll(categories);
 

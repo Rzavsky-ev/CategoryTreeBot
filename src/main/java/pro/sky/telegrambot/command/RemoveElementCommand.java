@@ -29,7 +29,7 @@ public class RemoveElementCommand implements Command {
         if (arguments.length != 2) {
             return new SendMessage(chatId,
                     "Неверный формат команды!" +
-                            " Используйте: /addElement <название элемента>");
+                            " Используйте: /removeElement <название элемента>");
         }
         try {
             categoryService.removeCategory(arguments[1]);

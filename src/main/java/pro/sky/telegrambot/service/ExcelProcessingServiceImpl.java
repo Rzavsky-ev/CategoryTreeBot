@@ -38,8 +38,7 @@ public class ExcelProcessingServiceImpl implements ExcelProcessingService {
      * Генерирует Excel-файл со списком всех категорий из базы данных.
      *
      * @return массив байтов с содержимым Excel-файла
-     * @throws IOException                  если произошла ошибка ввода-вывода при работе с файлом
-     * @throws CategoryTreeIsEmptyException если в базе данных отсутствуют категории
+     * @throws IOException если произошла ошибка ввода-вывода при работе с файлом
      */
     @Transactional(readOnly = true)
     @Override
@@ -135,8 +134,7 @@ public class ExcelProcessingServiceImpl implements ExcelProcessingService {
      *
      * @param fileContent массив байтов содержимого Excel-файла
      * @return список категорий, полученных из файла
-     * @throws IOException                 если произошла ошибка ввода-вывода при чтении файла
-     * @throws InvalidExcelFormatException если формат файла не соответствует ожидаемому
+     * @throws IOException если произошла ошибка ввода-вывода при чтении файла
      */
     public List<Category> parseExcel(byte[] fileContent) throws IOException {
         try (Workbook workbook = new XSSFWorkbook(new ByteArrayInputStream(fileContent))) {
