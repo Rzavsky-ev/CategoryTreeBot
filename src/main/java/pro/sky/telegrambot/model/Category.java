@@ -7,34 +7,62 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Сущность, представляющая узел дерева категорий.
- * Поддерживает иерархическую структуру через связи parent-child.
+ * Класс-сущность, представляющий категорию в древовидной структуре.
+ * <p>
+ * Категория может иметь родительскую категорию и список дочерних категорий,
+ * что позволяет строить иерархические структуры любой глубины.
+ * <p>
+ * Связи между категориями:
+ * <ul>
+ *     <li>Многие-к-одному с родительской категорией (ManyToOne)</li>
+ *     <li>Один-ко-многим с дочерними категориями (OneToMany)</li>
+ * </ul>
+ *
+ * @see Entity Аннотация, указывающая, что класс является JPA сущностью
+ * @see Table Аннотация для указания имени таблицы в БД
  */
 @Entity
 @Table(name = "category_tree")
 public class Category {
 
+    /**
+     * Уникальный идентификатор категории
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
 
+    /**
+     * Название категории (уникальное, обязательное поле)
+     */
     @Column(name = "name", nullable = false, unique = true)
     private String name;
 
     /**
-     * Родительская категория (null для корневых)
+     * Родительская категория (может быть null для корневых категорий)
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id", nullable = true)
+    @JoinColumn(name = "id_parent", nullable = true)
     private Category parent;
 
+    /**
+     * Список дочерних категорий
+     */
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Category> children = new ArrayList<>();
 
+    /**
+     * Конструктор по умолчанию (требуется JPA)
+     */
     public Category() {
     }
 
+    /**
+     * Конструктор с именем категории
+     *
+     * @param name название создаваемой категории
+     */
     public Category(String name) {
         this.name = name;
     }

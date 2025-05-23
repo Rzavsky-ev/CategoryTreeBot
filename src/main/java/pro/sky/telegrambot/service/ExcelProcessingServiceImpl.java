@@ -21,24 +21,53 @@ import java.util.Map;
 
 
 /**
- * Сервис для работы с Excel-файлами, содержащими данные о категориях.
- * Предоставляет функциональность для генерации Excel-файла с деревом категорий
- * и парсинга Excel-файла для получения списка категорий.
+ * Реализация сервиса для работы с Excel-файлами категорий.
+ * <p>
+ * Класс предоставляет функционал для:
+ * <ul>
+ *     <li>Генерации Excel-файла с текущей структурой категорий</li>
+ *     <li>Парсинга Excel-файла и восстановления структуры категорий</li>
+ * </ul>
+ * <p>
+ * Формат Excel-файла:
+ * <ul>
+ *     <li>Столбец "id_Категории" - числовой идентификатор (обязательный)</li>
+ *     <li>Столбец "Имя_Категории" - строковое название (обязательное)</li>
+ *     <li>Столбец "id_Родителя" - числовой идентификатор родителя (опциональный)</li>
+ * </ul>
+ *
+ * @see Service Аннотация Spring, обозначающая класс как сервис
+ * @see ExcelProcessingService Интерфейс, который реализует данный сервис
+ * @see Transactional Аннотация для управления транзакциями
  */
 @Service
 public class ExcelProcessingServiceImpl implements ExcelProcessingService {
 
     private final CategoryRepository categoryRepository;
 
+    /**
+     * Конструктор с внедрением зависимости CategoryRepository.
+     *
+     * @param categoryRepository репозиторий для работы с категориями
+     */
     public ExcelProcessingServiceImpl(CategoryRepository categoryRepository) {
         this.categoryRepository = categoryRepository;
     }
 
     /**
-     * Генерирует Excel-файл со списком всех категорий из базы данных.
+     * {@inheritDoc}
+     * <p>
+     * Алгоритм генерации:
+     * <ol>
+     *     <li>Создание книги Excel и листа "Категории"</li>
+     *     <li>Формирование заголовков таблицы</li>
+     *     <li>Заполнение данными из репозитория</li>
+     *     <li>Автоматическое выравнивание столбцов</li>
+     *     <li>Сохранение в массив байтов</li>
+     * </ol>
      *
-     * @return массив байтов с содержимым Excel-файла
-     * @throws IOException если произошла ошибка ввода-вывода при работе с файлом
+     * @throws CategoryTreeIsEmptyException если в базе нет категорий
+     * @throws IOException                  если произошла ошибка ввода-вывода
      */
     @Transactional(readOnly = true)
     @Override
@@ -62,10 +91,10 @@ public class ExcelProcessingServiceImpl implements ExcelProcessingService {
     }
 
     /**
-     * Создает стиль для заголовков таблицы в Excel-файле.
+     * Создает стиль для заголовков таблицы.
      *
-     * @param workbook книга Excel, для которой создается стиль
-     * @return созданный стиль ячейки
+     * @param workbook книга Excel
+     * @return созданный стиль ячеек
      */
     private CellStyle createHeaderStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
@@ -76,14 +105,14 @@ public class ExcelProcessingServiceImpl implements ExcelProcessingService {
     }
 
     /**
-     * Создает строку заголовков в листе Excel.
+     * Создает строку заголовков в таблице.
      *
      * @param sheet       лист Excel
      * @param headerStyle стиль для заголовков
      */
     private void createHeaders(Sheet sheet, CellStyle headerStyle) {
         Row headerRow = sheet.createRow(0);
-        String[] headers = {"id", "name", "parent_id"};
+        String[] headers = {"id_Категории", "Имя_Категории", "id_Родителя"};
 
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
@@ -93,10 +122,10 @@ public class ExcelProcessingServiceImpl implements ExcelProcessingService {
     }
 
     /**
-     * Обрабатывает данные категорий и заполняет ими лист Excel.
+     * Заполняет лист данными категорий.
      *
-     * @param sheet лист Excel для заполнения данными
-     * @throws CategoryTreeIsEmptyException если в базе данных отсутствуют категории
+     * @param sheet лист для заполнения
+     * @throws CategoryTreeIsEmptyException если в базе нет категорий
      */
     private void processCategoryData(Sheet sheet) {
         List<Category> categories = categoryRepository.findAll();
@@ -119,9 +148,9 @@ public class ExcelProcessingServiceImpl implements ExcelProcessingService {
     }
 
     /**
-     * Автоматически изменяет ширину столбцов в листе Excel.
+     * Автоматически настраивает ширину столбцов.
      *
-     * @param sheet лист Excel для настройки ширины столбцов
+     * @param sheet лист для настройки
      */
     private void autoSizeColumns(Sheet sheet) {
         for (int i = 0; i < 3; i++) {
@@ -130,11 +159,18 @@ public class ExcelProcessingServiceImpl implements ExcelProcessingService {
     }
 
     /**
-     * Парсит Excel-файл и возвращает список категорий.
+     * {@inheritDoc}
+     * <p>
+     * Алгоритм парсинга:
+     * <ol>
+     *     <li>Чтение файла и получение первого листа</li>
+     *     <li>Построчное чтение и валидация данных</li>
+     *     <li>Создание временного хранилища категорий</li>
+     *     <li>Установка родительских связей</li>
+     * </ol>
      *
-     * @param fileContent массив байтов содержимого Excel-файла
-     * @return список категорий, полученных из файла
-     * @throws IOException если произошла ошибка ввода-вывода при чтении файла
+     * @throws InvalidExcelFormatException если файл имеет неверный формат
+     * @throws IOException                 если произошла ошибка чтения файла
      */
     public List<Category> parseExcel(byte[] fileContent) throws IOException {
         try (Workbook workbook = new XSSFWorkbook(new ByteArrayInputStream(fileContent))) {
@@ -150,7 +186,7 @@ public class ExcelProcessingServiceImpl implements ExcelProcessingService {
                 categoryMap.put(category.getId(), category);
                 categories.add(category);
             }
-
+            // Установка родительских связей
             for (Category category : categories) {
                 if (category.getParent() != null) {
                     Category parent = categoryMap.get(category.getParent().getId());
@@ -164,32 +200,35 @@ public class ExcelProcessingServiceImpl implements ExcelProcessingService {
     }
 
     /**
-     * Парсит строку из Excel-файла в объект Category.
+     * Парсит строку Excel-файла в объект Category.
      *
-     * @param row строка Excel-файла для парсинга
-     * @return объект Category, созданный из данных строки
-     * @throws InvalidExcelFormatException если данные в строке имеют неверный формат
+     * @param row строка Excel-файла
+     * @return объект Category
+     * @throws InvalidExcelFormatException если данные строки невалидны
      */
     private Category parseCategoryRow(Row row) {
         try {
             Category category = new Category();
 
+            // Обработка ID категории (число)
             Cell idCell = row.getCell(0);
             if (idCell == null || idCell.getCellType() != CellType.NUMERIC) {
-                throw new InvalidExcelFormatException("Отсутствует или неверный формат id в строке " + (row.getRowNum() + 1));
+                throw new InvalidExcelFormatException("Неверный ID категории в строке " + (row.getRowNum() + 1));
             }
             category.setId((long) idCell.getNumericCellValue());
 
+            // Обработка названия (строка)
             Cell nameCell = row.getCell(1);
             if (nameCell == null || nameCell.getCellType() != CellType.STRING || nameCell.getStringCellValue().isEmpty()) {
-                throw new InvalidExcelFormatException("Отсутствует или неверный формат имени в строке " + (row.getRowNum() + 1));
+                throw new InvalidExcelFormatException("Неверное название в строке " + (row.getRowNum() + 1));
             }
             category.setName(nameCell.getStringCellValue().trim());
 
+            // Обработка родительского ID (число или строка)
             Cell parentCell = row.getCell(2);
             if (parentCell != null) {
                 switch (parentCell.getCellType()) {
-                    case NUMERIC:
+                    case NUMERIC:  // Числовой формат
                         long parentId = (long) parentCell.getNumericCellValue();
                         if (parentId != 0) {
                             Category parent = new Category();
@@ -197,7 +236,7 @@ public class ExcelProcessingServiceImpl implements ExcelProcessingService {
                             category.setParent(parent);
                         }
                         break;
-                    case STRING:
+                    case STRING:  // Строковый формат
                         String parentIdStr = parentCell.getStringCellValue().trim();
                         if (!parentIdStr.isEmpty()) {
                             try {
@@ -208,24 +247,20 @@ public class ExcelProcessingServiceImpl implements ExcelProcessingService {
                                     category.setParent(parent);
                                 }
                             } catch (NumberFormatException e) {
-                                throw new InvalidExcelFormatException("Неверный формат parent_id (должно быть число) в строке " + (row.getRowNum() + 1));
+                                throw new InvalidExcelFormatException("ID родителя должно быть числом в строке " + (row.getRowNum() + 1));
                             }
                         }
                         break;
-                    case BLANK:
+                    case BLANK:  // Пустые ячейки
                     case _NONE:
                         break;
                     default:
-                        throw new InvalidExcelFormatException("Неверный формат parent_id в строке " + (row.getRowNum() + 1));
+                        throw new InvalidExcelFormatException("Неверный формат родителя в строке " + (row.getRowNum() + 1));
                 }
             }
             return category;
         } catch (Exception e) {
-            throw new InvalidExcelFormatException("Некорректные данные в строке " + (row.getRowNum() + 1) + ": " + e.getMessage());
+            throw new InvalidExcelFormatException("Ошибка в строке " + (row.getRowNum() + 1) + ": " + e.getMessage());
         }
     }
 }
-
-
-
-

@@ -27,15 +27,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit-тесты для {@link ExcelProcessingServiceImpl}, проверяющие функциональность
- * генерации и парсинга Excel-файлов для категорий.
+ * Unit-тесты для {@link ExcelProcessingServiceImpl}, проверяющие работу с Excel-файлами категорий.
  * <p>
- * Тесты используют Mockito для мокирования зависимостей и проверяют:
+ * Тесты покрывают следующие сценарии:
  * <ul>
- *   <li>Корректность генерации Excel-файла для категорий</li>
- *   <li>Обработку случаев с пустым деревом категорий</li>
- *   <li>Парсинг корректно сформированных Excel-файлов</li>
- *   <li>Обработку файлов с некорректным форматом</li>
+ *   <li>Генерацию Excel-файла из дерева категорий</li>
+ *   <li>Парсинг Excel-файла в список категорий</li>
+ *   <li>Обработку ошибок при пустом дереве категорий</li>
+ *   <li>Обработку ошибок при невалидном формате Excel-файла</li>
  * </ul>
  */
 @ExtendWith(MockitoExtension.class)
@@ -47,10 +46,23 @@ public class ExcelProcessingServiceTest {
     @InjectMocks
     private ExcelProcessingServiceImpl excelProcessingServiceTest;
 
+    /**
+     * Тестовый список категорий.
+     */
     private List<Category> testCategories;
 
+    /**
+     * Инициализация тестовых данных перед каждым тестом.
+     * <p>
+     * Создает тестовое дерево категорий:
+     * <pre>
+     * Parent
+     * ├── Child 1
+     * └── Child 2
+     * </pre>
+     */
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         testCategories = new ArrayList<>();
         Category parent = new Category("Parent");
         Category child1 = new Category("Child 1");
@@ -72,9 +84,21 @@ public class ExcelProcessingServiceTest {
 
     }
 
-
+    /**
+     * Тестирует генерацию Excel-файла для непустого дерева категорий.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Корректность структуры сгенерированного файла</li>
+     *   <li>Наличие всех обязательных колонок</li>
+     *   <li>Правильность данных в файле</li>
+     *   <li>Соответствие иерархии категорий</li>
+     * </ul>
+     *
+     * @throws IOException если возникла ошибка при работе с файлом
+     */
     @Test
-    void generateExcelCategoriesTreeNotEmpty() throws IOException {
+    public void generateExcelCategoriesTreeNotEmpty() throws IOException {
 
         when(categoryRepositoryMock.findAll()).thenReturn(testCategories);
 
@@ -89,9 +113,9 @@ public class ExcelProcessingServiceTest {
             assertEquals("Категории", sheet.getSheetName());
 
             Row headerRow = sheet.getRow(0);
-            assertEquals("id", headerRow.getCell(0).getStringCellValue());
-            assertEquals("name", headerRow.getCell(1).getStringCellValue());
-            assertEquals("parent_id", headerRow.getCell(2).getStringCellValue());
+            assertEquals("id_Категории", headerRow.getCell(0).getStringCellValue());
+            assertEquals("Имя_Категории", headerRow.getCell(1).getStringCellValue());
+            assertEquals("id_Родителя", headerRow.getCell(2).getStringCellValue());
 
             assertEquals(4, sheet.getPhysicalNumberOfRows());
             assertEquals(1L, sheet.getRow(1).getCell(0).getNumericCellValue());
@@ -104,8 +128,18 @@ public class ExcelProcessingServiceTest {
         }
     }
 
+
+    /**
+     * Тестирует генерацию Excel-файла для пустого дерева категорий.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Выброс исключения {@link CategoryTreeIsEmptyException}</li>
+     *   <li>Корректность сообщения об ошибке</li>
+     * </ul>
+     */
     @Test
-    void generateExcelCategoriesTreeEmpty() {
+    public void generateExcelCategoriesTreeEmpty() {
         String messageException = "Дерево категорий пусто.";
 
         when(categoryRepositoryMock.findAll()).thenReturn(Collections.emptyList());
@@ -117,8 +151,20 @@ public class ExcelProcessingServiceTest {
         assertEquals(messageException, exception.getMessage());
     }
 
+    /**
+     * Тестирует парсинг корректного Excel-документа.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Корректность преобразования данных</li>
+     *   <li>Соответствие иерархии категорий</li>
+     *   <li>Правильность установки родительских связей</li>
+     * </ul>
+     *
+     * @throws IOException если возникла ошибка при работе с файлом
+     */
     @Test
-    void parseExcelCorrectDocument() throws IOException {
+    public void parseExcelCorrectDocument() throws IOException {
 
         byte[] excelContent = createTestExcelFile();
 
@@ -142,8 +188,19 @@ public class ExcelProcessingServiceTest {
         assertEquals(1L, child2.getParent().getId());
     }
 
+    /**
+     * Тестирует парсинг невалидного Excel-документа.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Выброс исключения {@link InvalidExcelFormatException}</li>
+     *   <li>Обработку ошибок формата данных</li>
+     * </ul>
+     *
+     * @throws IOException если возникла ошибка при работе с файлом
+     */
     @Test
-    void parseExcelNoCorrectDocument() throws IOException {
+    public void parseExcelNoCorrectDocument() throws IOException {
 
         byte[] excelContent = createInvalidExcelFileWithWrongId();
 
@@ -151,6 +208,12 @@ public class ExcelProcessingServiceTest {
                 () -> excelProcessingServiceTest.parseExcel(excelContent));
     }
 
+    /**
+     * Создает тестовый Excel-файл с корректными данными.
+     *
+     * @return массив байтов с содержимым Excel-файла
+     * @throws IOException если возникла ошибка при создании файла
+     */
     private byte[] createTestExcelFile() throws IOException {
         try (Workbook workbook = new XSSFWorkbook();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
@@ -184,6 +247,12 @@ public class ExcelProcessingServiceTest {
         }
     }
 
+    /**
+     * Создает невалидный Excel-файл с некорректными данными.
+     *
+     * @return массив байтов с содержимым невалидного Excel-файла
+     * @throws IOException если возникла ошибка при создании файла
+     */
     private byte[] createInvalidExcelFileWithWrongId() throws IOException {
         try (Workbook workbook = new XSSFWorkbook();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {

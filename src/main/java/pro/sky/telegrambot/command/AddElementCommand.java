@@ -6,45 +6,82 @@ import pro.sky.telegrambot.exception.CategoryExistsException;
 import pro.sky.telegrambot.exception.CategoryNotFoundException;
 import pro.sky.telegrambot.service.CategoryService;
 
+import java.util.List;
+
 /**
- * Обработчик команды /addElement для добавления категорий в дерево.
- * Поддерживает два формата:
- * 1. Добавление корневой категории: /addElement <имя корневой категории>
- * 2. Добавление дочерней категории: /addElement <имя родительской категории>
- * <имя дочерней категории>
+ * Класс команды для добавления элементов (категорий) в иерархическую структуру.
+ * Поддерживает добавление как корневых, так и дочерних категорий.
+ * <p>
+ * Форматы команд:
+ * <ul>
+ *     <li>Добавление корневой категории: {@code /addElement "Название элемента"}</li>
+ *     <li>Добавление дочерней категории: {@code /addElement "Родительский элемент" "Дочерний элемент"}</li>
+ * </ul>
+ * <p>
+ * В случае ошибок (неправильный формат команды, дублирование категорий и т.д.)
+ * пользователю отправляется соответствующее сообщение об ошибке.
+ *
+ * @see Command Базовый интерфейс команд
+ * @see CategoryService Сервис для работы с категориями
  */
 @Component
 public class AddElementCommand implements Command {
 
     private final CategoryService categoryService;
 
+    /**
+     * Конструктор с внедрением зависимости CategoryService.
+     *
+     * @param categoryService сервис для работы с категориями
+     */
     public AddElementCommand(CategoryService categoryService) {
         this.categoryService = categoryService;
     }
 
+    /**
+     * Возвращает имя команды, которое она обрабатывает.
+     *
+     * @return имя команды (ADD_ELEMENT)
+     */
     @Override
     public NamesCommand getNameCommand() {
         return NamesCommand.ADD_ELEMENT;
     }
 
+    /**
+     * Выполняет логику команды по добавлению элемента (категории).
+     * <p>
+     * В зависимости от количества аргументов:
+     * <ul>
+     *     <li>2 аргумента - добавляет корневую категорию</li>
+     *     <li>3 аргумента - добавляет дочернюю категорию к указанному родителю</li>
+     * </ul>
+     *
+     * @param chatId    идентификатор чата для отправки ответа
+     * @param arguments список аргументов команды
+     * @return SendMessage с результатом выполнения операции или сообщением об ошибке
+     */
     @Override
-    public SendMessage execute(Long chatId, String commandText) {
-        String[] arguments = commandText.trim().split("\\s+");
-        if (arguments.length < 2 || arguments.length > 3) {
-            return new SendMessage(chatId,
-                    "Неверный формат команды! Используйте: /addElement <имя родительского элемента>" +
-                            " <имя дочернего элемента>" +
-                            " или /addElement <имя корневого элемента>");
+    public SendMessage execute(Long chatId, List<String> arguments) {
+        if (arguments.size() < 2 || arguments.size() > 3) {
+            return new SendMessage(chatId, """
+                        ⚠ *Ошибка формата команды!*
+                        Правильное использование:
+                     **Добавить корневую категорию:**
+                       /addElement "Название элемента"
+                     **Добавить дочернюю категорию:**
+                       /addElement "Родительский элемент" "Дочерний элемент"
+                    ❗ *Не забудьте кавычки!* ❗""");
         }
         try {
-            if (arguments.length == 2) {
-                categoryService.addRootCategory(arguments[1]);
+            if (arguments.size() == 2) {
+                categoryService.addRootCategory(arguments.get(1));
                 return new SendMessage(chatId,
-                        "Корневой элемент <<" + arguments[1] + ">> добавлен.");
+                        "Корневой элемент \"" + arguments.get(1) + "\" добавлен.");
             } else {
-                categoryService.addChildCategory(arguments[1], arguments[2]);
+                categoryService.addChildCategory(arguments.get(1), arguments.get(2));
                 return new SendMessage(chatId,
-                        "Дочерний элемент <<" + arguments[2] + ">> добавлен.");
+                        "Дочерний элемент \"" + arguments.get(2) + "\" добавлен.");
             }
         } catch (CategoryExistsException | CategoryNotFoundException e) {
             return new SendMessage(chatId, "Ошибка: " + e.getMessage());

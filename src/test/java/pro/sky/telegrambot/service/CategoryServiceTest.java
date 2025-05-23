@@ -21,19 +21,22 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * Тестовый класс для проверки функциональности {@link CategoryServiceImpl}.
- *
- * <p>Проверяет основные сценарии работы с категориями:</p>
+ * Unit-тесты для {@link CategoryServiceImpl}, проверяющие логику работы с категориями.
+ * <p>
+ * Тесты покрывают следующие сценарии:
  * <ul>
  *   <li>Добавление корневых и дочерних категорий</li>
  *   <li>Удаление категорий</li>
- *   <li>Просмотр иерархии категорий</li>
+ *   <li>Просмотр дерева категорий</li>
+ *   <li>Обработку ошибочных ситуаций</li>
  * </ul>
  *
- * <p>Использует Mockito для мокирования зависимостей.</p>
- *
- * @see CategoryService
- * @see CategoryRepository
+ * <p>Использует Mockito для:
+ * <ul>
+ *   <li>Мокирования {@link CategoryRepository}</li>
+ *   <li>Проверки взаимодействия с репозиторием</li>
+ *   <li>Тестирования исключительных ситуаций</li>
+ * </ul>
  */
 @ExtendWith(MockitoExtension.class)
 public class CategoryServiceTest {
@@ -44,6 +47,16 @@ public class CategoryServiceTest {
     @InjectMocks
     private CategoryServiceImpl categoryServiceTest;
 
+    /**
+     * Тестирует добавление новой корневой категории.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Проверку существования категории</li>
+     *   <li>Сохранение категории с правильными параметрами</li>
+     *   <li>Отсутствие родителя у корневой категории</li>
+     * </ul>
+     */
     @Test
     public void addRootCategoryNotExisting() {
         String nameCategory = "Test";
@@ -61,10 +74,20 @@ public class CategoryServiceTest {
         assertNull(saved.getParent());
     }
 
+    /**
+     * Тестирует попытку добавления существующей корневой категории.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Выброс исключения {@link CategoryExistsException}</li>
+     *   <li>Корректность сообщения об ошибке</li>
+     *   <li>Отсутствие вызова save()</li>
+     * </ul>
+     */
     @Test
     public void addRootCategoryExisting() {
-        String messageException = "Категория с таким названием уже существует ";
-        String nameCategory = "Test";
+        String messageException = "Категория \"a\" уже существует";
+        String nameCategory = "a";
 
         when(categoryRepositoryMock.existsByName(nameCategory)).thenReturn(true);
 
@@ -73,11 +96,21 @@ public class CategoryServiceTest {
         });
 
         verify(categoryRepositoryMock, never()).save(any());
-        assertEquals(messageException + nameCategory, exception.getMessage());
+        assertEquals(messageException, exception.getMessage());
     }
 
+    /**
+     * Тестирует добавление дочерней категории к существующему родителю.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Поиск родительской категории</li>
+     *   <li>Проверку существования дочерней категории</li>
+     *   <li>Корректное сохранение с установленным родителем</li>
+     * </ul>
+     */
     @Test
-    public void addNonExistentChildCategoryParentExists() {
+    public void addNotExistentChildCategoryParentExists() {
 
         String childName = "Test";
         String parentName = "Parent";
@@ -99,11 +132,21 @@ public class CategoryServiceTest {
         assertEquals(parentName, savedChild.getParent().getName());
     }
 
+    /**
+     * Тестирует добавление дочерней категории к несуществующему родителю.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Выброс исключения {@link CategoryNotFoundException}</li>
+     *   <li>Корректность сообщения об ошибке</li>
+     *   <li>Отсутствие вызова save()</li>
+     * </ul>
+     */
     @Test
-    public void addNonExistentChildCategoryParentNotFound() {
-        String childName = "Test";
+    public void addNotExistentChildCategoryParentNotFound() {
+        String childName = "Child";
         String parentName = "Parent";
-        String messageException = "Родительская категория не найдена";
+        String messageException = "Родительская категория \"Parent\" не найдена";
         when(categoryRepositoryMock.findByName(parentName)).
                 thenReturn(Optional.empty());
 
@@ -115,11 +158,22 @@ public class CategoryServiceTest {
         assertEquals(messageException, exception.getMessage());
     }
 
+    /**
+     * Тестирует добавление существующей дочерней категории.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Выброс исключения {@link CategoryExistsException}</li>
+     *   <li>Корректность сообщения об ошибке</li>
+     *   <li>Проверку существования категорий</li>
+     *   <li>Отсутствие вызова save()</li>
+     * </ul>
+     */
     @Test
     public void addExistingChildCategoryParentExists() {
-        String childName = "Test";
+        String childName = "Child";
         String parentName = "Parent";
-        String messageException = "Дочерняя категория уже существует";
+        String messageException = "Дочерняя категория \"Child\" уже существует";
         Category parent = new Category(parentName);
 
         when(categoryRepositoryMock.findByName(parentName)).
@@ -136,6 +190,15 @@ public class CategoryServiceTest {
         assertEquals(messageException, exception.getMessage());
     }
 
+    /**
+     * Тестирует удаление существующей категории.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Поиск категории по имени</li>
+     *   <li>Корректное удаление категории</li>
+     * </ul>
+     */
     @Test
     public void removeExistingCategory() {
         String nameCategory = "Test";
@@ -158,10 +221,20 @@ public class CategoryServiceTest {
         verify(categoryRepositoryMock).delete(category);
     }
 
+    /**
+     * Тестирует удаление несуществующей категории.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Выброс исключения {@link CategoryNotFoundException}</li>
+     *   <li>Корректность сообщения об ошибке</li>
+     *   <li>Отсутствие вызова delete()</li>
+     * </ul>
+     */
     @Test
     public void removeNotFoundCategory() {
         String nameCategory = "Test";
-        String messageException = "Категория не найдена";
+        String messageException = "Категория \"Test\" не найдена";
 
         when(categoryRepositoryMock.findByName(nameCategory)).
                 thenReturn(Optional.empty());
@@ -175,8 +248,18 @@ public class CategoryServiceTest {
         assertEquals(messageException, exception.getMessage());
     }
 
+    /**
+     * Тестирует просмотр непустого дерева категорий.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Поиск корневых категорий</li>
+     *   <li>Формирование корректного строкового представления</li>
+     *   <li>Иерархию родитель-потомок</li>
+     * </ul>
+     */
     @Test
-    public void viewNonEmptyTree() {
+    public void viewNotEmptyTree() {
         Category parent = new Category("Parent");
         Category child1 = new Category("Child1");
         Category child2 = new Category("Child2");
@@ -199,6 +282,15 @@ public class CategoryServiceTest {
         assertEquals(expected, result);
     }
 
+    /**
+     * Тестирует попытку просмотра пустого дерева категорий.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Выброс исключения {@link CategoryTreeIsEmptyException}</li>
+     *   <li>Корректность сообщения об ошибке</li>
+     * </ul>
+     */
     @Test
     public void viewNotFoundTree() {
         String messageException = "Дерево категорий пусто.";

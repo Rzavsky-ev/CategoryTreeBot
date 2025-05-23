@@ -22,22 +22,18 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
+
 /**
- * Модульные тесты для класса {@link CommandServiceImpl}.
+ * Unit-тесты для {@link CommandServiceImpl}, проверяющие обработку входящих команд.
  * <p>
- * Этот тестовый класс проверяет поведение {@code CommandServiceImpl} при обработке различных типов Telegram-обновлений,
- * включая обновления с документами, текстовыми командами и невалидными/пустыми данными. Для мокирования зависимостей используется Mockito.
- * </p>
- *
- * <p>Основные тестируемые сценарии:</p>
+ * Тесты покрывают следующие сценарии:
  * <ul>
- *   <li>Игнорирование обновлений без сообщений</li>
- *   <li>Обработка обновлений с документами</li>
- *   <li>Обработка текстовых команд (например, "/help")</li>
- *   <li>Обработка обновлений без текста или документов</li>
+ *   <li>Обработку обновлений без сообщений</li>
+ *   <li>Обработку документов</li>
+ *   <li>Обработку текстовых команд</li>
+ *   <li>Обработку обычного текста (не команд)</li>
  * </ul>
  */
-
 @ExtendWith(MockitoExtension.class)
 public class CommandServiceTest {
 
@@ -61,10 +57,18 @@ public class CommandServiceTest {
 
     CommandServiceImpl commandServiceTest;
 
+    /**
+     * Тестовый идентификатор чата.
+     */
     private final Long CHAT_ID = 123L;
 
+    /**
+     * Настройка тестового окружения перед каждым тестом.
+     * <p>
+     * Инициализирует тестируемый сервис с mock-зависимостями.
+     */
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         when(helpCommandMock.getNameCommand()).thenReturn(NamesCommand.HELP);
 
         commandServiceTest = new CommandServiceImpl(
@@ -74,6 +78,15 @@ public class CommandServiceTest {
         );
     }
 
+    /**
+     * Тестирует обработку обновления без сообщения.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Отсутствие взаимодействия с TelegramBot</li>
+     *   <li>Отсутствие вызовов команд</li>
+     * </ul>
+     */
     @Test
     public void processCommandIgnoresUpdateWithoutMessage() {
         when(updateMock.message()).thenReturn(null);
@@ -83,6 +96,15 @@ public class CommandServiceTest {
         verifyNoInteractions(telegramBotMock, uploadCommandMock);
     }
 
+    /**
+     * Тестирует обработку сообщения с документом.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Вызов метода handleDocumentExcel команды загрузки</li>
+     *   <li>Передачу правильных параметров (chat_id и сообщение)</li>
+     * </ul>
+     */
     @Test
     public void processingCommandWhenDocumentIsPresentCallsHandleDocument() throws IOException {
         when(chatMock.id()).thenReturn(CHAT_ID);
@@ -95,6 +117,14 @@ public class CommandServiceTest {
         verify(uploadCommandMock).handleDocumentExcel(eq(CHAT_ID), eq(messageMock));
     }
 
+    /**
+     * Тестирует обработку сообщения без документа.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Отсутствие вызова handleDocumentExcel</li>
+     * </ul>
+     */
     @Test
     public void processingCommandWhenDocumentNotPresentNotCallsHandleDocument() throws IOException {
         when(chatMock.id()).thenReturn(CHAT_ID);
@@ -107,8 +137,18 @@ public class CommandServiceTest {
         verify(uploadCommandMock, never()).handleDocumentExcel(eq(CHAT_ID), eq(messageMock));
     }
 
+    /**
+     * Тестирует обработку текстовой команды.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Вызов соответствующей команды (help)</li>
+     *   <li>Отправку ответного сообщения через TelegramBot</li>
+     *   <li>Передачу правильных параметров команде</li>
+     * </ul>
+     */
     @Test
-    void processingCommandWhenTextIsPresentCallsHandleText() {
+    public void processingCommandWhenTextIsPresentCallsHandleText() {
         when(chatMock.id()).thenReturn(CHAT_ID);
         when(messageMock.chat()).thenReturn(chatMock);
         when(messageMock.text()).thenReturn("/help");
@@ -116,14 +156,22 @@ public class CommandServiceTest {
 
         SendMessage expectedResponse = new SendMessage(CHAT_ID.toString(), "Test");
 
-        when(helpCommandMock.execute(eq(CHAT_ID), eq("/help"))).thenReturn(expectedResponse);
+        when(helpCommandMock.execute(eq(CHAT_ID), eq(List.of("/help")))).thenReturn(expectedResponse);
 
         commandServiceTest.processCommand(updateMock);
-        verify(helpCommandMock).execute(eq(CHAT_ID), eq("/help"));
+        verify(helpCommandMock).execute(eq(CHAT_ID), eq(List.of("/help")));
 
         verify(telegramBotMock).execute(eq(expectedResponse));
     }
 
+    /**
+     * Тестирует обработку сообщения без текста.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Отсутствие вызова команд</li>
+     * </ul>
+     */
     @Test
     public void processingCommandWhenTextNotPresentNotCallsHandleText() {
         when(chatMock.id()).thenReturn(CHAT_ID);
@@ -137,8 +185,18 @@ public class CommandServiceTest {
         verifyNoInteractions(uploadCommandMock);
     }
 
+    /**
+     * Тестирует обработку обычного текста (не команды).
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>Отправку сообщения с инструкцией</li>
+     *   <li>Корректность содержимого сообщения</li>
+     *   <li>Правильность указания chat_id</li>
+     * </ul>
+     */
     @Test
-    void processingCommandWhenTextIsPresentNotCallsHandleText() {
+    public void processingCommandWhenTextIsPresentNotCallsHandleText() {
         when(chatMock.id()).thenReturn(CHAT_ID);
         when(messageMock.chat()).thenReturn(chatMock);
         when(messageMock.text()).thenReturn("Test");
