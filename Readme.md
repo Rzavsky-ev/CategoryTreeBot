@@ -36,13 +36,13 @@ cd category-bot
 ```
 spring.datasource.url=jdbc:postgresql://localhost:5432/categoryTree
 spring.datasource.username=Eduard_Rz
-spring.datasource.password=EdTelegramBot
+spring.datasource.password=
 ```
 
 3. Указать токен бота:
 
 ```
-telegram.bot.token=8121785052:AAGoi_nmrkGSdyK69duapvY5IX7vZQNY5Co
+telegram.bot.token=
 ```
 
 4. Запустить приложение:
