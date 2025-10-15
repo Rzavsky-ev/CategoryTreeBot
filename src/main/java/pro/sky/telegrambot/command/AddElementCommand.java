@@ -11,29 +11,12 @@ import java.util.List;
 /**
  * Класс команды для добавления элементов (категорий) в иерархическую структуру.
  * Поддерживает добавление как корневых, так и дочерних категорий.
- * <p>
- * Форматы команд:
- * <ul>
- *     <li>Добавление корневой категории: {@code /addElement "Название элемента"}</li>
- *     <li>Добавление дочерней категории: {@code /addElement "Родительский элемент" "Дочерний элемент"}</li>
- * </ul>
- * <p>
- * В случае ошибок (неправильный формат команды, дублирование категорий и т.д.)
- * пользователю отправляется соответствующее сообщение об ошибке.
- *
- * @see Command Базовый интерфейс команд
- * @see CategoryService Сервис для работы с категориями
  */
 @Component
 public class AddElementCommand implements Command {
 
     private final CategoryService categoryService;
 
-    /**
-     * Конструктор с внедрением зависимости CategoryService.
-     *
-     * @param categoryService сервис для работы с категориями
-     */
     public AddElementCommand(CategoryService categoryService) {
         this.categoryService = categoryService;
     }
@@ -50,12 +33,6 @@ public class AddElementCommand implements Command {
 
     /**
      * Выполняет логику команды по добавлению элемента (категории).
-     * <p>
-     * В зависимости от количества аргументов:
-     * <ul>
-     *     <li>2 аргумента - добавляет корневую категорию</li>
-     *     <li>3 аргумента - добавляет дочернюю категорию к указанному родителю</li>
-     * </ul>
      *
      * @param chatId    идентификатор чата для отправки ответа
      * @param arguments список аргументов команды

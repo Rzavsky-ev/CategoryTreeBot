@@ -9,27 +9,12 @@ import java.util.List;
 
 /**
  * Команда для удаления категории из иерархического дерева.
- * <p>
- * Позволяет удалить существующую категорию по её названию.
- * При удалении родительской категории также удаляются все её дочерние элементы.
- * <p>
- * Формат команды: {@code /removeElement "название элемента"}
- * <p>
- *
- * @see Command Базовый интерфейс команд
- * @see CategoryService Сервис для работы с категориями
- * @see CategoryNotFoundException Исключение при отсутствии категории
  */
 @Component
 public class RemoveElementCommand implements Command {
 
     private final CategoryService categoryService;
 
-    /**
-     * Конструктор с внедрением зависимости CategoryService.
-     *
-     * @param categoryService сервис для работы с категориями
-     */
     public RemoveElementCommand(CategoryService categoryService) {
         this.categoryService = categoryService;
     }
@@ -46,17 +31,14 @@ public class RemoveElementCommand implements Command {
 
     /**
      * Выполняет удаление указанной категории.
-     * <p>
-     * Проверяет корректность формата команды и пытается удалить категорию.
-     * В случае успеха возвращает подтверждение, при ошибках - соответствующее сообщение.
      *
-     * @param chatId идентификатор чата для отправки ответа
+     * @param chatId    идентификатор чата для отправки ответа
      * @param arguments список аргументов команды
      * @return SendMessage с результатом выполнения операции:
-     *         - подтверждение успешного удаления
-     *         - сообщение об ошибке формата
-     *         - сообщение о ненайденной категории
-     *         - сообщение о непредвиденной ошибке
+     * - подтверждение успешного удаления
+     * - сообщение об ошибке формата
+     * - сообщение о ненайденной категории
+     * - сообщение о непредвиденной ошибке
      */
     @Override
     public SendMessage execute(Long chatId, List<String> arguments) {

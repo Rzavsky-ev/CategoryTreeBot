@@ -16,42 +16,16 @@ import java.util.List;
 
 /**
  * Команда для скачивания дерева категорий в виде Excel-файла.
- * <p>
- * Позволяет пользователю получить полное дерево категорий в формате Excel.
- * Файл содержит структурированные данные о категориях и их взаимосвязях.
- * <p>
- * Формат команды: {@code /download}
- *
- * @see Command Базовый интерфейс команд
- * @see ExcelProcessingService Сервис для генерации Excel-файлов
  */
 @Component
 public class DownloadCommand implements Command {
-    /**
-     * Максимально допустимый размер файла для отправки (50 МБ)
-     */
+
     private static final long MAX_FILE_SIZE = 50_000_000L;
-
-    /**
-     * Имя файла по умолчанию
-     */
     private static final String DEFAULT_FILENAME = "Categories.xlsx";
-
-    /**
-     * Подпись к файлу по умолчанию
-     */
     private static final String DEFAULT_CAPTION = "Дерево категорий";
-
     private final ExcelProcessingService excelProcessingService;
-
     private final TelegramBot telegramBot;
 
-    /**
-     * Конструктор с внедрением зависимостей.
-     *
-     * @param excelProcessingService сервис для работы с Excel
-     * @param telegramBot            клиент Telegram бота
-     */
     public DownloadCommand(ExcelProcessingService excelProcessingService,
                            TelegramBot telegramBot) {
         this.excelProcessingService = excelProcessingService;
@@ -70,9 +44,6 @@ public class DownloadCommand implements Command {
 
     /**
      * Выполняет команду скачивания файла с категориями.
-     * <p>
-     * Генерирует Excel-файл с деревом категорий и отправляет его пользователю.
-     * В случае успеха возвращает подробное описание структуры файла.
      *
      * @param chatId    идентификатор чата для отправки сообщения
      * @param arguments аргументы команды

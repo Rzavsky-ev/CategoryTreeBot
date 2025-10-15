@@ -9,13 +9,6 @@ import java.util.Optional;
 
 /**
  * Репозиторий для работы с категориями в базе данных.
- * <p>
- * Предоставляет стандартные CRUD-операции через {@link JpaRepository},
- * а также специализированные методы для работы с древовидной структурой категорий.
- *
- * @see Repository Аннотация Spring, обозначающая класс как репозиторий
- * @see JpaRepository Базовый интерфейс Spring Data JPA
- * @see Category Сущность категории
  */
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Long> {
