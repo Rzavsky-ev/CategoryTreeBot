@@ -22,52 +22,22 @@ import java.util.Map;
 
 /**
  * Реализация сервиса для работы с Excel-файлами категорий.
- * <p>
- * Класс предоставляет функционал для:
- * <ul>
- *     <li>Генерации Excel-файла с текущей структурой категорий</li>
- *     <li>Парсинга Excel-файла и восстановления структуры категорий</li>
- * </ul>
- * <p>
- * Формат Excel-файла:
- * <ul>
- *     <li>Столбец "id_Категории" - числовой идентификатор (обязательный)</li>
- *     <li>Столбец "Имя_Категории" - строковое название (обязательное)</li>
- *     <li>Столбец "id_Родителя" - числовой идентификатор родителя (опциональный)</li>
- * </ul>
- *
- * @see Service Аннотация Spring, обозначающая класс как сервис
- * @see ExcelProcessingService Интерфейс, который реализует данный сервис
- * @see Transactional Аннотация для управления транзакциями
  */
 @Service
 public class ExcelProcessingServiceImpl implements ExcelProcessingService {
 
     private final CategoryRepository categoryRepository;
 
-    /**
-     * Конструктор с внедрением зависимости CategoryRepository.
-     *
-     * @param categoryRepository репозиторий для работы с категориями
-     */
     public ExcelProcessingServiceImpl(CategoryRepository categoryRepository) {
         this.categoryRepository = categoryRepository;
     }
 
     /**
-     * {@inheritDoc}
-     * <p>
-     * Алгоритм генерации:
-     * <ol>
-     *     <li>Создание книги Excel и листа "Категории"</li>
-     *     <li>Формирование заголовков таблицы</li>
-     *     <li>Заполнение данными из репозитория</li>
-     *     <li>Автоматическое выравнивание столбцов</li>
-     *     <li>Сохранение в массив байтов</li>
-     * </ol>
+     * Генерирует Excel-файл со всеми категориями из базы данных.
      *
-     * @throws CategoryTreeIsEmptyException если в базе нет категорий
-     * @throws IOException                  если произошла ошибка ввода-вывода
+     * @return массив байтов с содержимым Excel-файла
+     * @throws IOException                  если произошла ошибка ввода-вывода при создании файла
+     * @throws CategoryTreeIsEmptyException если в базе данных нет категорий
      */
     @Transactional(readOnly = true)
     @Override
@@ -159,18 +129,12 @@ public class ExcelProcessingServiceImpl implements ExcelProcessingService {
     }
 
     /**
-     * {@inheritDoc}
-     * <p>
-     * Алгоритм парсинга:
-     * <ol>
-     *     <li>Чтение файла и получение первого листа</li>
-     *     <li>Построчное чтение и валидация данных</li>
-     *     <li>Создание временного хранилища категорий</li>
-     *     <li>Установка родительских связей</li>
-     * </ol>
+     * Парсит Excel-файл и извлекает из него список категорий.
      *
-     * @throws InvalidExcelFormatException если файл имеет неверный формат
-     * @throws IOException                 если произошла ошибка чтения файла
+     * @param fileContent содержимое Excel-файла в виде массива байтов
+     * @return список распарсенных категорий с восстановленными связями
+     * @throws IOException                 если произошла ошибка ввода-вывода при чтении файла
+     * @throws InvalidExcelFormatException если формат файла не соответствует ожидаемому
      */
     public List<Category> parseExcel(byte[] fileContent) throws IOException {
         try (Workbook workbook = new XSSFWorkbook(new ByteArrayInputStream(fileContent))) {

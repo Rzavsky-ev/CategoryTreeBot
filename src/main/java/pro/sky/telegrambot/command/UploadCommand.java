@@ -6,7 +6,6 @@ import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.request.GetFile;
 import com.pengrad.telegrambot.request.SendMessage;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import pro.sky.telegrambot.exception.InvalidExcelFormatException;
 import pro.sky.telegrambot.model.Category;
 import pro.sky.telegrambot.repository.CategoryRepository;
@@ -22,39 +21,14 @@ import java.util.stream.Collectors;
 
 /**
  * Команда для загрузки категорий из Excel-файла.
- * <p>
- * Обрабатывает загруженные пользователем Excel-файлы, содержащие структуру категорий,
- * и сохраняет их в базу данных. Поддерживает обработку родительских связей между категориями.
- * <p>
- * Формат команды: {@code /upload} (после чего пользователь должен отправить Excel-файл)
- * <p>
- * Рабочий процесс:
- * <ol>
- *     <li>Пользователь отправляет команду /upload</li>
- *     <li>Бот запрашивает Excel-файл</li>
- *     <li>После получения файла парсит его и сохраняет категории</li>
- * </ol>
- *
- * @see Command Базовый интерфейс команд
- * @see ExcelProcessingService Сервис для обработки Excel-файлов
- * @see InvalidExcelFormatException Исключение при неверном формате файла
  */
 @Component
 public class UploadCommand implements Command {
 
     private final ExcelProcessingService excelProcessingService;
-
     private final TelegramBot telegramBot;
-
     private final CategoryRepository categoryRepository;
 
-    /**
-     * Конструктор с внедрением зависимостей.
-     *
-     * @param workingWithExcelService сервис для работы с Excel
-     * @param telegramBot             клиент Telegram бота
-     * @param categoryRepository      репозиторий для работы с категориями
-     */
     public UploadCommand(ExcelProcessingService workingWithExcelService,
                          TelegramBot telegramBot, CategoryRepository categoryRepository) {
         this.excelProcessingService = workingWithExcelService;
@@ -91,13 +65,6 @@ public class UploadCommand implements Command {
 
     /**
      * Обрабатывает полученный Excel-документ с категориями.
-     * <p>
-     * Выполняет:
-     * <ol>
-     *     <li>Скачивание файла</li>
-     *     <li>Парсинг содержимого</li>
-     *     <li>Сохранение категорий в базу данных</li>
-     * </ol>
      *
      * @param chatId  идентификатор чата
      * @param message сообщение с прикрепленным файлом
@@ -135,18 +102,9 @@ public class UploadCommand implements Command {
 
     /**
      * Сохраняет список категорий в базу данных с учетом родительских связей.
-     * <p>
-     * Логика работы:
-     * <ul>
-     *     <li>Проверяет существующие категории</li>
-     *     <li>Избегает дублирования</li>
-     *     <li>Устанавливает родительские связи</li>
-     *     <li>Сохраняет все изменения</li>
-     * </ul>
      *
      * @param newCategories список новых категорий для сохранения
      */
-    @Transactional
     public void saveCategories(List<Category> newCategories) {
 //    Сначала находим существующие категории по именам
         List<String> categoryNames = newCategories.stream()

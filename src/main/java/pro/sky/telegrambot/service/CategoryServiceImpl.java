@@ -13,45 +13,21 @@ import java.util.Optional;
 
 /**
  * Реализация сервиса для работы с иерархией категорий.
- * <p>
- * Класс предоставляет функционал для управления древовидной структурой категорий:
- * <ul>
- *     <li>Добавление корневых и дочерних категорий</li>
- *     <li>Удаление категорий (с каскадным удалением дочерних)</li>
- *     <li>Формирование текстового представления дерева категорий</li>
- * </ul>
- * <p>
- * Все операции выполняются в транзакционном контексте ({@code @Transactional}).
- *
- * @see Service Аннотация Spring, обозначающая класс как сервис
- * @see Transactional Аннотация для управления транзакциями
- * @see CategoryService Интерфейс, который реализует данный сервис
  */
 @Service
 public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
 
-    /**
-     * Конструктор с внедрением зависимости CategoryRepository.
-     *
-     * @param categoryRepository репозиторий для работы с категориями в БД
-     */
     public CategoryServiceImpl(CategoryRepository categoryRepository) {
         this.categoryRepository = categoryRepository;
     }
 
     /**
-     * {@inheritDoc}
-     * <p>
-     * Реализация:
-     * <ol>
-     *     <li>Проверяет существование категории с таким именем</li>
-     *     <li>Создает новую категорию</li>
-     *     <li>Сохраняет в базу данных</li>
-     * </ol>
+     * Добавляет корневую категорию (без родительской категории).
      *
-     * @throws CategoryExistsException если категория с таким именем уже существует
+     * @param name название корневой категории
+     * @throws CategoryExistsException если категория с указанным именем уже существует
      */
     @Override
     @Transactional
@@ -64,18 +40,12 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     /**
-     * {@inheritDoc}
-     * <p>
-     * Реализация:
-     * <ol>
-     *     <li>Проверяет существование родительской категории</li>
-     *     <li>Проверяет отсутствие дочерней категории с таким именем</li>
-     *     <li>Создает новую категорию и устанавливает родительскую связь</li>
-     *     <li>Сохраняет изменения</li>
-     * </ol>
+     * Добавляет дочернюю категорию к указанной родительской категории.
      *
+     * @param parentName имя родительской категории
+     * @param childName  имя дочерней категории
      * @throws CategoryNotFoundException если родительская категория не найдена
-     * @throws CategoryExistsException   если дочерняя категория уже существует
+     * @throws CategoryExistsException   если дочерняя категория с указанным именем уже существует
      */
     @Override
     @Transactional
@@ -96,15 +66,11 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     /**
-     * {@inheritDoc}
-     * <p>
-     * Реализация:
-     * <ol>
-     *     <li>Проверяет существование категории</li>
-     *     <li>Удаляет категорию (каскадное удаление дочерних категорий)</li>
-     * </ol>
+     * Удаляет категорию по имени.
+     * При удалении родительской категории также удаляются все её дочерние категории (каскадное удаление).
      *
-     * @throws CategoryNotFoundException если категория не найдена
+     * @param name имя категории для удаления
+     * @throws CategoryNotFoundException если категория с указанным именем не найдена
      */
     @Override
     @Transactional
@@ -117,18 +83,11 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     /**
-     * {@inheritDoc}
-     * <p>
-     * Формат вывода:
-     * <pre>
-     * Дерево категорий:
-     * - Родительская категория
-     *   - Дочерняя категория 1
-     *   - Дочерняя категория 2
-     * - Другая родительская категория
-     * </pre>
+     * Возвращает строковое представление всего дерева категорий.
+     * Дерево отображается в виде иерархической структуры с отступами для вложенных категорий.
      *
-     * @throws CategoryTreeIsEmptyException если в базе нет категорий
+     * @return строковое представление дерева категорий
+     * @throws CategoryTreeIsEmptyException если дерево категорий пустое
      */
     @Override
     @Transactional
